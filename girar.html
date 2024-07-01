@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red Square</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .square {
+            width: 100px;
+            height: 100px;
+            background-color: red;
+            position: absolute;
+            transform-origin: center;
+        }
+
+        .handle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: blue;
+        }
+
+        .handle.top-left {
+            top: -5px;
+            left: -5px;
+            cursor: nwse-resize;
+        }
+
+        .handle.top-right {
+            top: -5px;
+            right: -5px;
+            cursor: nesw-resize;
+        }
+
+        .handle.bottom-left {
+            bottom: -5px;
+            left: -5px;
+            cursor: nesw-resize;
+        }
+
+        .handle.bottom-right {
+            bottom: -5px;
+            right: -5px;
+            cursor: nwse-resize;
+        }
+
+        .handle.rotate {
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: grab;
+            background-color: green;
+        }
+    </style>
+</head>
+<body>
+    <div id="square" class="square"></div>
+    <script>
+        const square = document.getElementById('square');
+        const handles = ['top-left', 'top-right', 'bottom-left', 'bottom-right'];
+
+        handles.forEach(handle => {
+            const div = document.createElement('div');
+            div.className = `handle ${handle}`;
+            square.appendChild(div);
+        });
+
+        // Add rotate handle
+        const rotateHandle = document.createElement('div');
+        rotateHandle.className = 'handle rotate';
+        square.appendChild(rotateHandle);
+
+        let isResizing = false;
+        let isRotating = false;
+        let isMoving = false;
+        let initialMouseX, initialMouseY;
+        let initialWidth, initialHeight, initialRotation;
+        let initialTop, initialLeft;
+        let currentHandle;
+
+        square.addEventListener('mousedown', function (event) {
+            if (event.target.classList.contains('handle')) {
+                if (event.target.classList.contains('rotate')) {
+                    isRotating = true;
+                    initialMouseX = event.clientX;
+                    initialMouseY = event.clientY;
+                    initialRotation = getRotation(square);
+                } else {
+                    isResizing = true;
+                    currentHandle = event.target;
+                    initialMouseX = event.clientX;
+                    initialMouseY = event.clientY;
+                    initialWidth = square.offsetWidth;
+                    initialHeight = square.offsetHeight;
+                }
+            } else {
+                isMoving = true;
+                initialMouseX = event.clientX;
+                initialMouseY = event.clientY;
+                initialTop = square.offsetTop;
+                initialLeft = square.offsetLeft;
+            }
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+
+        function onMouseMove(event) {
+            const dx = event.clientX - initialMouseX;
+            const dy = event.clientY - initialMouseY;
+
+            if (isResizing) {
+                if (currentHandle.classList.contains('top-left')) {
+                    square.style.width = `${initialWidth - dx}px`;
+                    square.style.height = `${initialHeight - dy}px`;
+                    square.style.top = `${initialTop + dy}px`;
+                    square.style.left = `${initialLeft + dx}px`;
+                } else if (currentHandle.classList.contains('top-right')) {
+                    square.style.width = `${initialWidth + dx}px`;
+                    square.style.height = `${initialHeight - dy}px`;
+                    square.style.top = `${initialTop + dy}px`;
+                } else if (currentHandle.classList.contains('bottom-left')) {
+                    square.style.width = `${initialWidth - dx}px`;
+                    square.style.height = `${initialHeight + dy}px`;
+                    square.style.left = `${initialLeft + dx}px`;
+                } else if (currentHandle.classList.contains('bottom-right')) {
+                    square.style.width = `${initialWidth + dx}px`;
+                    square.style.height = `${initialHeight + dy}px`;
+                }
+            } else if (isMoving) {
+                square.style.top = `${initialTop + dy}px`;
+                square.style.left = `${initialLeft + dx}px`;
+            } else if (isRotating) {
+                const centerX = square.offsetLeft + square.offsetWidth / 2;
+                const centerY = square.offsetTop + square.offsetHeight / 2;
+                const angle = Math.atan2(event.clientY - centerY, event.clientX - centerX) * (180 / Math.PI);
+                square.style.transform = `rotate(${angle}deg)`;
+            }
+        }
+
+        function onMouseUp() {
+            isResizing = false;
+            isRotating = false;
+            isMoving = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        }
+
+        function getRotation(el) {
+            const st = window.getComputedStyle(el, null);
+            const tr = st.getPropertyValue("transform");
+            if (tr === "none") return 0;
+            const values = tr.split('(')[1].split(')')[0].split(',');
+            const a = values[0];
+            const b = values[1];
+            const angle = Math.round(Math.atan2(b, a) * (180 / Math.PI));
+            return angle;
+        }
+    </script>
+</body>
+</html>
